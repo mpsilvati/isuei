@@ -1,5 +1,5 @@
-/* FitTrack Service Worker — cache-first com fallback de rede */
-const CACHE = 'fittrack-v1';
+/* iSuei Service Worker — cache-first com fallback de rede */
+const CACHE = 'isuei-v1';
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {

@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="FitTrack">
+<meta name="apple-mobile-web-app-title" content="iSuei">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2d6a4f">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%232d6a4f'/%3E%3Ctext x='96' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3EFT%3C/text%3E%3C/svg%3E">
-<title>FitTrack — Treinos, Medidas e Nutrição</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%232d6a4f'/%3E%3Ctext x='96' y='135' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3EiS%3C/text%3E%3C/svg%3E">
+<title>iSuei — Treinos, Medidas e Nutrição</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -274,7 +274,7 @@ tr:hover td{background:var(--cream)}
 </head>
 <body>
 <nav class="topnav">
-  <div class="nav-brand">Fit<em>Track</em></div>
+  <div class="nav-brand">i<em>Suei</em></div>
   <div class="nav-links">
     <button class="nav-link active" data-page="dashboard" onclick="goto('dashboard',this)">Visão Geral</button>
     <button class="nav-link" data-page="perfil" onclick="goto('perfil',this)">Perfil</button>
@@ -301,7 +301,7 @@ tr:hover td{background:var(--cream)}
 <div class="app">
 
   <div class="page" id="p-onboarding">
-    <div class="empty-state"><div class="empty-state-emoji">💪</div><div class="empty-state-title">Bem-vindo ao FitTrack</div><div class="empty-state-desc">Crie seu perfil com objetivo, medidas e local de treino. Cada pessoa tem seus próprios dados.</div><button class="btn btn-primary" onclick="openNewUserModal()">Criar meu perfil</button></div>
+    <div class="empty-state"><div class="empty-state-emoji">💪</div><div class="empty-state-title">Bem-vindo ao iSuei</div><div class="empty-state-desc">Crie seu perfil com objetivo, medidas e local de treino. Cada pessoa tem seus próprios dados.</div><button class="btn btn-primary" onclick="openNewUserModal()">Criar meu perfil</button></div>
   </div>
 
   <div class="page active" id="p-dashboard">
@@ -642,7 +642,7 @@ function updateHeader(){
 }
 function shareApp(){
   const url=location.href;
-  if(navigator.share)navigator.share({title:'FitTrack',text:'Acompanhe peso, treinos e nutrição comigo!',url});
+  if(navigator.share)navigator.share({title:'iSuei',text:'Acompanhe peso, treinos e nutrição comigo!',url});
   else if(navigator.clipboard)navigator.clipboard.writeText(url).then(()=>alert('Link copiado!'));
   else prompt('Copie e compartilhe:',url);
 }
@@ -747,7 +747,7 @@ function exportData(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  a.download=`fittrack-backup-${todayISO()}.json`;
+  a.download=`isuei-backup-${todayISO()}.json`;
   document.body.appendChild(a);a.click();a.remove();
   URL.revokeObjectURL(url);
   showToast('t-io','Backup exportado!','ok');
