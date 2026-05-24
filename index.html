@@ -14,6 +14,7 @@
 <title>iSuei — Treinos, Medidas e Nutrição</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 :root {
@@ -255,6 +256,35 @@ tr:hover td{background:var(--cream)}
 .io-row{display:flex;gap:10px;flex-wrap:wrap}
 .io-row .btn{flex:1;min-width:160px}
 
+/* AUTH / LOGIN */
+.auth-screen{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:#fff;border:1px solid var(--s100);border-radius:var(--r);box-shadow:var(--sh-md);max-width:420px;width:100%;padding:32px 28px}
+.auth-logo{text-align:center;margin-bottom:24px}
+.auth-logo .nav-brand{font-size:42px}
+.auth-logo p{font-size:13px;color:var(--s500);margin-top:6px}
+.auth-tabs{display:flex;gap:4px;background:var(--s50);padding:4px;border-radius:10px;margin-bottom:22px}
+.auth-tab{flex:1;padding:9px;border:none;background:none;border-radius:7px;font-size:13px;font-weight:600;color:var(--s500);cursor:pointer;font-family:inherit}
+.auth-tab.active{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.auth-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;background:#fff;border:1.5px solid var(--s200);border-radius:var(--r-sm);font-weight:600;font-size:14px;color:var(--ink);cursor:pointer;font-family:inherit;margin-bottom:14px}
+.auth-google:hover{background:var(--s50);border-color:var(--s300)}
+.auth-google svg{width:18px;height:18px}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--s300);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--s100)}
+.auth-anon{display:block;width:100%;padding:13px;background:none;border:1.5px dashed var(--s200);border-radius:var(--r-sm);font-size:13px;color:var(--s500);cursor:pointer;font-family:inherit;margin-top:14px;text-align:center;font-weight:500}
+.auth-anon:hover{border-color:var(--accent);color:var(--accent)}
+.auth-foot{font-size:11px;color:var(--s300);text-align:center;margin-top:18px;line-height:1.5}
+.cloud-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:var(--accent-l);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-left:8px}
+.cloud-pill svg{width:11px;height:11px}
+.cloud-pill.local{background:var(--s100);color:var(--s500)}
+
+/* ADMIN */
+.admin-bar{background:linear-gradient(135deg,#7c2d12,#9a3412);color:#fff;padding:14px 20px;border-radius:var(--r);margin-bottom:22px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh)}
+.admin-bar-text{flex:1;font-size:13px;line-height:1.4}
+.admin-bar-icon{font-size:22px}
+.admin-table{font-size:13px}
+.admin-table td.email{font-family:monospace;color:var(--s500);font-size:11px}
+.admin-stat{background:linear-gradient(135deg,#fff7ed,#fff);border-color:#fed7aa}
+
 @media (max-width:900px){.stat-row{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:800px){.chart-grid{grid-template-columns:1fr}.fg-2,.fg-3,.fg-4{grid-template-columns:1fr}.tip-grid{grid-template-columns:1fr}}
 @media (max-width:700px){
@@ -284,6 +314,7 @@ tr:hover td{background:var(--cream)}
     <button class="nav-link" data-page="treinos" onclick="goto('treinos',this)">Treinos</button>
     <button class="nav-link" data-page="exercicios" onclick="goto('exercicios',this)">Exercícios</button>
     <button class="nav-link" data-page="nutricao" onclick="goto('nutricao',this)">Nutrição</button>
+    <button class="nav-link" data-page="admin" onclick="goto('admin',this)" style="display:none">🛡️ Admin</button>
   </div>
   <button class="profile-btn" onclick="openProfileMenu()">
     <div class="profile-avatar" id="hdAvatar">?</div>
@@ -303,6 +334,71 @@ tr:hover td{background:var(--cream)}
 
   <div class="page" id="p-onboarding">
     <div class="empty-state"><div class="empty-state-emoji">💪</div><div class="empty-state-title">Bem-vindo ao iSuei</div><div class="empty-state-desc">Crie seu perfil com objetivo, medidas e local de treino. Cada pessoa tem seus próprios dados.</div><button class="btn btn-primary" onclick="openNewUserModal()">Criar meu perfil</button></div>
+  </div>
+
+  <!-- LOGIN / SIGNUP -->
+  <div class="page" id="p-login">
+    <div class="auth-screen">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="nav-brand">i<em>Suei</em></div>
+          <p>Acompanhe peso, treinos e nutrição</p>
+        </div>
+
+        <button class="auth-google" onclick="loginGoogle()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09 0-.72.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar com Google
+        </button>
+
+        <div class="auth-divider">ou com e-mail</div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="auth-tab-in" onclick="switchAuthTab('in')">Entrar</button>
+          <button class="auth-tab" id="auth-tab-up" onclick="switchAuthTab('up')">Criar conta</button>
+        </div>
+
+        <div class="fg fg-1">
+          <div class="field" id="auth-nome-field" style="display:none"><label>Nome</label><input id="auth-nome" placeholder="Como te chamam"></div>
+          <div class="field"><label>E-mail</label><input id="auth-email" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+          <div class="field"><label>Senha</label><input id="auth-senha" type="password" autocomplete="current-password" placeholder="••••••••" minlength="6"></div>
+        </div>
+
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn btn-primary btn-block" id="auth-submit" onclick="authSubmit()">Entrar</button>
+        </div>
+
+        <div class="toast" id="t-auth"></div>
+
+        <button class="auth-anon" onclick="continueAnon()">Continuar sem conta (dados ficam só neste dispositivo)</button>
+
+        <div class="auth-foot">
+          Ao criar conta você concorda com armazenar seus dados de treino na nuvem.<br>
+          Você pode exportar e apagar tudo a qualquer momento.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="page" id="p-admin">
+    <div class="section-heading"><h2>Painel Admin</h2><p>Visão geral do uso do iSuei</p></div>
+    <div class="admin-bar"><div class="admin-bar-icon">🛡️</div><div class="admin-bar-text"><strong>Modo administrador.</strong> Você vê dados de todos os usuários cadastrados. Para os usuários normais, este painel não é visível.</div></div>
+    <div class="stat-row">
+      <div class="stat-box admin-stat"><div class="stat-label">Usuários totais</div><div class="stat-value accent" id="ad-total">—</div><div class="stat-sub" id="ad-novos">novos esta semana</div></div>
+      <div class="stat-box admin-stat"><div class="stat-label">Ativos (7d)</div><div class="stat-value" id="ad-ativos">—</div><div class="stat-sub">com treino concluído</div></div>
+      <div class="stat-box admin-stat"><div class="stat-label">Treinos concluídos</div><div class="stat-value warn" id="ad-treinos">—</div><div class="stat-sub" id="ad-treinos-sub">total</div></div>
+      <div class="stat-box admin-stat"><div class="stat-label">Registros de peso</div><div class="stat-value" id="ad-pesos">—</div><div class="stat-sub">total</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-panel"><div class="cp-title">Usuários por objetivo</div><div class="cp-sub">distribuição</div><div style="position:relative;height:220px"><canvas id="adCharObj"></canvas></div></div>
+      <div class="chart-panel"><div class="cp-title">Usuários por local de treino</div><div class="cp-sub">casa × academia × híbrido</div><div style="position:relative;height:220px"><canvas id="adCharLoc"></canvas></div></div>
+    </div>
+    <div class="table-card">
+      <div class="tc-head"><span>Usuários</span><span class="tc-sub" id="ad-cnt">—</span></div>
+      <div class="table-scroll">
+        <table class="admin-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Objetivo</th><th>Local</th><th>Nível</th><th>Treinos</th><th>Pesos</th><th>Último treino</th><th>Cadastro</th></tr></thead><tbody id="ad-tbody"><tr><td colspan="9" class="empty-cell">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
   </div>
 
   <div class="page active" id="p-dashboard">
@@ -449,6 +545,17 @@ tr:hover td{background:var(--cream)}
 <div class="modal-bg" id="m-builder"><div class="modal"><div class="modal-head"><h3>Adicionar exercício</h3><button class="modal-close" onclick="closeModal('m-builder')">×</button></div><div class="modal-body" id="builder-body"></div></div></div>
 
 <script>
+/* ═══════════════ SUPABASE CONFIG ═══════════════ */
+const SUPABASE_URL = 'https://iedqifsweamhqxktpbpe.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3HDzuYDiHiOuGN5vRRFKHg_IX-AJTbp';
+const ADMIN_EMAILS = ['mpsilvati@gmail.com'];
+let sb = null;
+try {
+  if (window.supabase && SUPABASE_URL && SUPABASE_KEY) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  }
+} catch (e) { console.warn('Supabase init failed', e); }
+
 const K_USERS='fittrack_users_v2', K_CURRENT='fittrack_current_user_v2', K_DATA=(uid)=>`fittrack_data_v2_${uid}`;
 const CDN='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/';
 const NEW_DATA=()=>({pesos:[],meuTreino:null,treinosConcluidos:[]});
@@ -785,11 +892,408 @@ if('serviceWorker' in navigator && location.protocol !== 'file:'){
   });
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
+/* ═══════════════════════════════════════════════════════════════
+   AUTH + CLOUD SYNC
+   ═══════════════════════════════════════════════════════════════ */
+state.session = null;
+state.cloud = false;
+
+function isAdmin() { return state.session && ADMIN_EMAILS.includes(state.session.user?.email); }
+
+function showAuthScreen(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-login').classList.add('active');
+}
+function switchAuthTab(t){
+  document.getElementById('auth-tab-in').classList.toggle('active', t==='in');
+  document.getElementById('auth-tab-up').classList.toggle('active', t==='up');
+  document.getElementById('auth-nome-field').style.display = t==='up' ? '' : 'none';
+  document.getElementById('auth-submit').textContent = t==='in' ? 'Entrar' : 'Criar conta';
+  document.getElementById('auth-submit').dataset.mode = t;
+  document.getElementById('auth-senha').setAttribute('autocomplete', t==='in'?'current-password':'new-password');
+}
+
+async function authSubmit(){
+  if(!sb){showToast('t-auth','Supabase não inicializou. Recarregue.','err');return}
+  const mode = document.getElementById('auth-submit').dataset.mode || 'in';
+  const email = document.getElementById('auth-email').value.trim();
+  const senha = document.getElementById('auth-senha').value;
+  const nome = document.getElementById('auth-nome').value.trim();
+  if(!email||!senha){showToast('t-auth','E-mail e senha obrigatórios','err');return}
+  if(mode==='up' && !nome){showToast('t-auth','Digite seu nome','err');return}
+  if(senha.length<6){showToast('t-auth','Senha precisa de 6+ caracteres','err');return}
+  const btn = document.getElementById('auth-submit');
+  btn.disabled = true; btn.textContent = mode==='in'?'Entrando…':'Criando…';
+  try {
+    if(mode==='in'){
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+      if(error) throw error;
+      showToast('t-auth','Bem-vindo!','ok');
+    } else {
+      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome } } });
+      if(error) throw error;
+      if(!data.session){
+        showToast('t-auth','Conta criada! Verifique seu e-mail para confirmar.','ok');
+        btn.disabled = false; btn.textContent = 'Entrar';
+        return;
+      }
+      showToast('t-auth','Conta criada!','ok');
+    }
+    // Session change handler will load data
+  } catch(e){
+    showToast('t-auth', e.message || 'Erro ao autenticar', 'err');
+    btn.disabled = false; btn.textContent = mode==='in'?'Entrar':'Criar conta';
+  }
+}
+
+async function loginGoogle(){
+  if(!sb){alert('Supabase não inicializou');return}
+  try {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.href }
+    });
+    if(error) throw error;
+  } catch(e){
+    showToast('t-auth','Erro: '+(e.message||e),'err');
+  }
+}
+
+async function logout(){
+  if(!sb) return;
+  if(!confirm('Sair da sua conta? Os dados ficam salvos na nuvem.')) return;
+  await sb.auth.signOut();
+  state.session = null;
+  state.cloud = false;
+  state.users = [];
+  state.current = null;
+  state.data = NEW_DATA();
+  showAuthScreen();
+}
+
+function continueAnon(){
+  // Bypass login: use existing localStorage flow
   loadAll();
-  document.getElementById('f-data').value=new Date().toISOString().slice(0,10);
   updateHeader();
-  if(!state.current)showOnboarding();else goto('dashboard');
+  if(!state.current) showOnboarding();
+  else goto('dashboard');
+}
+
+async function onSessionChange(session){
+  state.session = session || null;
+  if(!session){ state.cloud = false; return; }
+  state.cloud = true;
+  await cloudLoadAll();
+  // Check for local data to migrate
+  const localUsers = JSON.parse(localStorage.getItem(K_USERS) || '[]');
+  if(localUsers.length > 0 && !sessionStorage.getItem('migration_offered_'+session.user.id)){
+    sessionStorage.setItem('migration_offered_'+session.user.id, '1');
+    setTimeout(()=>offerMigration(localUsers), 500);
+  }
+  updateHeader();
+  updateAdminNav();
+  goto('dashboard');
+}
+
+async function cloudLoadAll(){
+  if(!sb || !state.session) return;
+  const uid = state.session.user.id;
+  // Load profile
+  let { data: prof } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  if(!prof){
+    // First login: create profile from auth metadata
+    const meta = state.session.user.user_metadata || {};
+    const nomeDefault = meta.nome || meta.full_name || meta.name || (state.session.user.email||'').split('@')[0];
+    const newProf = { id: uid, nome: nomeDefault, email: state.session.user.email };
+    const { data: created } = await sb.from('profiles').insert(newProf).select('*').single();
+    prof = created;
+  } else {
+    // Update last_seen and email
+    await sb.from('profiles').update({ last_seen_at: new Date().toISOString(), email: state.session.user.email }).eq('id', uid);
+  }
+  if(!prof) return;
+  // Map cloud profile → in-memory user
+  state.users = [profileToUser(prof)];
+  state.current = uid;
+  // Load pesos
+  const { data: pesos } = await sb.from('pesos').select('*').eq('user_id', uid).order('data', { ascending: true });
+  // Load treino personalizado
+  const { data: tp } = await sb.from('treinos_personalizados').select('plano').eq('user_id', uid).maybeSingle();
+  // Load treinos concluídos
+  const { data: tc } = await sb.from('treinos_concluidos').select('data, day_idx, source').eq('user_id', uid);
+  state.data = {
+    pesos: (pesos||[]).map(p=>({data:p.data, peso:p.peso, imc:p.imc, cin:p.cin, abd:p.abd, coxa:p.coxa, braco:p.braco, notas:p.notas, _id:p.id})),
+    meuTreino: tp?.plano || null,
+    treinosConcluidos: (tc||[]).map(t=>({date:t.data, dayIdx:t.day_idx, source:t.source}))
+  };
+}
+
+function profileToUser(p){
+  return { id: p.id, nome: p.nome, idade: p.idade, sexo: p.sexo, altura: p.altura,
+    pesoInicial: p.peso_inicial, pesoAtual: p.peso_atual, meta: p.meta,
+    cin: p.cin, abd: p.abd, coxa: p.coxa, braco: p.braco,
+    objetivo: p.objetivo, local: p.local, freq: p.freq, nivel: p.nivel,
+    criadoEm: p.created_at };
+}
+
+async function cloudUpsertProfile(){
+  if(!state.cloud || !sb || !state.session) return;
+  const u = getUser(); if(!u) return;
+  const payload = {
+    id: state.session.user.id,
+    nome: u.nome, idade: u.idade, sexo: u.sexo, altura: u.altura,
+    peso_inicial: u.pesoInicial, peso_atual: u.pesoAtual, meta: u.meta,
+    cin: u.cin, abd: u.abd, coxa: u.coxa, braco: u.braco,
+    objetivo: u.objetivo, local: u.local, freq: u.freq, nivel: u.nivel,
+    email: state.session.user.email,
+    last_seen_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('profiles').upsert(payload, { onConflict: 'id' });
+  if(error) console.warn('cloudUpsertProfile', error);
+}
+
+async function cloudInsertPeso(reg){
+  if(!state.cloud || !sb || !state.session) return null;
+  const { data, error } = await sb.from('pesos').insert({
+    user_id: state.session.user.id,
+    data: reg.data, peso: reg.peso, imc: reg.imc,
+    cin: reg.cin, abd: reg.abd, coxa: reg.coxa, braco: reg.braco, notas: reg.notas
+  }).select('id').single();
+  if(error){ console.warn('cloudInsertPeso', error); return null; }
+  return data.id;
+}
+
+async function cloudDeletePeso(_id){
+  if(!state.cloud || !sb || !_id) return;
+  await sb.from('pesos').delete().eq('id', _id);
+}
+
+async function cloudSavePlano(){
+  if(!state.cloud || !sb || !state.session) return;
+  await sb.from('treinos_personalizados').upsert({
+    user_id: state.session.user.id,
+    plano: state.data.meuTreino,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+}
+
+async function cloudInsertTreinoConcluido(t){
+  if(!state.cloud || !sb || !state.session) return;
+  await sb.from('treinos_concluidos').upsert({
+    user_id: state.session.user.id,
+    data: t.date, day_idx: t.dayIdx, source: t.source
+  }, { onConflict: 'user_id,data' });
+}
+
+async function cloudDeleteTreinoConcluido(date){
+  if(!state.cloud || !sb || !state.session) return;
+  await sb.from('treinos_concluidos').delete().eq('user_id', state.session.user.id).eq('data', date);
+}
+
+/* HOOKS moved to end of data script (after function definitions) */
+/* ═══════════════════════════════════════════════════════════════
+   MIGRATION: local → cloud
+   ═══════════════════════════════════════════════════════════════ */
+function offerMigration(localUsers){
+  if(!confirm(`Encontramos ${localUsers.length} perfil(is) salvos neste dispositivo. Quer importar TODOS os dados (peso, medidas, treinos) pra sua conta na nuvem?`)) return;
+  migrateLocalToCloud(localUsers);
+}
+
+async function migrateLocalToCloud(localUsers){
+  if(!sb || !state.session) return;
+  // Pick first local user's data (most common case: single anon profile)
+  const localU = localUsers[0];
+  const localData = JSON.parse(localStorage.getItem(K_DATA(localU.id)) || 'null');
+  const u = getUser();
+  if(!u || !localData) return;
+  // Merge profile fields (don't override what cloud already has if newer)
+  const fillIfEmpty = (k, v) => { if((u[k]===null||u[k]===undefined) && v!==null && v!==undefined) u[k]=v; };
+  Object.entries(localU).forEach(([k,v])=>{ if(k!=='id'&&k!=='criadoEm') fillIfEmpty(k, v); });
+  await cloudUpsertProfile();
+  // Insert pesos
+  let okPesos = 0;
+  for(const p of (localData.pesos||[])){
+    const id = await cloudInsertPeso(p);
+    if(id){ p._id = id; okPesos++; state.data.pesos.push(p); }
+  }
+  // Insert meu treino
+  if(localData.meuTreino){ state.data.meuTreino = localData.meuTreino; await cloudSavePlano(); }
+  // Insert treinos concluídos
+  let okTr = 0;
+  for(const t of (localData.treinosConcluidos||[])){
+    await cloudInsertTreinoConcluido(t).then(()=>{ okTr++; state.data.treinosConcluidos.push(t); }).catch(()=>{});
+  }
+  saveData();
+  alert(`Migração concluída: ${okPesos} pesos, ${okTr} treinos concluídos. ✅`);
+  goto('dashboard');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════════════════════ */
+function updateAdminNav(){
+  document.querySelectorAll('.nav-link[data-page="admin"], .bot-btn[data-page="admin"]').forEach(b=>{
+    b.style.display = isAdmin() ? '' : 'none';
+  });
+}
+
+async function renderAdmin(){
+  if(!isAdmin()){ goto('dashboard'); return; }
+  if(!sb){ return; }
+  // Fetch all profiles + their stats via view
+  const { data, error } = await sb.from('admin_user_stats').select('*').order('last_seen_at', { ascending: false });
+  if(error){ console.warn(error); document.getElementById('ad-tbody').innerHTML = `<tr><td colspan="9" class="empty-cell">Erro: ${error.message}</td></tr>`; return; }
+  const users = data || [];
+  const now = new Date();
+  const week = new Date(now); week.setDate(now.getDate()-7);
+  const novos = users.filter(u => new Date(u.created_at) >= week).length;
+  const ativos = users.filter(u => u.treinos_7d > 0).length;
+  const totalTreinos = users.reduce((s,u)=>s+(u.total_treinos_concluidos||0), 0);
+  const totalPesos = users.reduce((s,u)=>s+(u.total_pesos||0), 0);
+  document.getElementById('ad-total').textContent = users.length;
+  document.getElementById('ad-novos').textContent = `+${novos} esta semana`;
+  document.getElementById('ad-ativos').textContent = ativos;
+  document.getElementById('ad-treinos').textContent = totalTreinos;
+  document.getElementById('ad-pesos').textContent = totalPesos;
+  document.getElementById('ad-cnt').textContent = `${users.length} usuário${users.length!==1?'s':''}`;
+  // Table
+  const tbody = document.getElementById('ad-tbody');
+  tbody.innerHTML = users.length ? users.map(u=>`
+    <tr>
+      <td><strong>${escapeHtml(u.nome||'—')}</strong></td>
+      <td class="email">${escapeHtml(u.email||'')}</td>
+      <td>${objLabel(u.objetivo)}</td>
+      <td>${locLabel(u.local)}</td>
+      <td>${nivLabel(u.nivel)}</td>
+      <td>${u.total_treinos_concluidos||0}</td>
+      <td>${u.total_pesos||0}</td>
+      <td>${u.ultimo_treino ? fmtFullDate(u.ultimo_treino) : '—'}</td>
+      <td>${fmtFullDate(u.created_at.slice(0,10))}</td>
+    </tr>`).join('') : `<tr><td colspan="9" class="empty-cell">Nenhum usuário ainda.</td></tr>`;
+  // Charts
+  if(state.charts.adObj) state.charts.adObj.destroy();
+  if(state.charts.adLoc) state.charts.adLoc.destroy();
+  const byObj = ['emagrecer','hipertrofia','condicionamento','definicao'].map(o => users.filter(u=>u.objetivo===o).length);
+  const byLoc = ['casa-livre','casa-halteres','academia','casa-academia'].map(l => users.filter(u=>u.local===l).length);
+  state.charts.adObj = new Chart(document.getElementById('adCharObj'), {
+    type:'doughnut',
+    data:{ labels:['Emagrecer','Hipertrofia','Condicion.','Definição'], datasets:[{ data: byObj, backgroundColor:['#ea580c','#fb923c','#fed7aa','#c2410c'] }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{ size:11 } } } } }
+  });
+  state.charts.adLoc = new Chart(document.getElementById('adCharLoc'), {
+    type:'bar',
+    data:{ labels:['Casa livre','Casa halteres','Academia','Híbrido'], datasets:[{ data: byLoc, backgroundColor:'#ea580c' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   updateHeader: add cloud pill + sign out option
+   ═══════════════════════════════════════════════════════════════ */
+const _origUpdateHeader = updateHeader;
+updateHeader = function(){
+  _origUpdateHeader();
+  const nameEl = document.getElementById('hdName');
+  // Show "cloud" badge when authenticated
+  const existingPill = document.querySelector('.profile-btn .cloud-pill');
+  if(existingPill) existingPill.remove();
+  if(state.cloud){
+    const pill = document.createElement('span');
+    pill.className = 'cloud-pill';
+    pill.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>nuvem';
+    nameEl.insertAdjacentElement('afterend', pill);
+  }
+};
+
+/* Hook goto to handle admin */
+const _origGoto = goto;
+goto = function(page, btn){
+  if(page === 'admin' && !isAdmin()){ page = 'dashboard'; }
+  _origGoto(page, btn);
+  if(page === 'admin') renderAdmin();
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   Hook openProfileMenu to add Sign Out + Sign In
+   ═══════════════════════════════════════════════════════════════ */
+const _origOpenProfileMenu = openProfileMenu;
+openProfileMenu = function(){
+  _origOpenProfileMenu();
+  const list = document.getElementById('users-list');
+  if(state.cloud){
+    // Cloud mode: show only signed-in user + Sign Out
+    list.innerHTML = '';
+    const u = getUser();
+    if(u){
+      list.innerHTML = `
+        <div class="user-row active">
+          <div class="profile-avatar">${initials(u.nome)}</div>
+          <div class="user-meta">
+            <div class="user-meta-name">${escapeHtml(u.nome)} <span class="cloud-pill" style="margin-left:4px">nuvem</span></div>
+            <div class="user-meta-goal">${escapeHtml(state.session?.user?.email||'')}</div>
+          </div>
+        </div>`;
+    }
+    // Replace "Add profile" button with "Sair"
+    const addBtn = document.querySelector('#m-profile .btn-primary');
+    if(addBtn){ addBtn.textContent = 'Sair da conta'; addBtn.onclick = ()=>{ closeModal('m-profile'); logout(); }; }
+  } else {
+    // Anonymous: add a "Sign in" link at bottom
+    const addBtn = document.querySelector('#m-profile .btn-primary');
+    if(addBtn){
+      addBtn.textContent = '+ Adicionar perfil';
+      addBtn.onclick = ()=>{ closeModal('m-profile'); openNewUserModal(); };
+    }
+    // Add a separator + sign-in button
+    if(!document.getElementById('m-signin-btn')){
+      const sep = document.createElement('div');
+      sep.style.cssText = 'border-top:1px solid var(--s100);margin:14px 0;padding-top:14px;text-align:center;font-size:12px;color:var(--s500)';
+      sep.innerHTML = 'Quer sincronizar entre dispositivos?';
+      const btn = document.createElement('button');
+      btn.id = 'm-signin-btn';
+      btn.className = 'btn btn-ghost btn-block';
+      btn.style.marginTop = '8px';
+      btn.textContent = '🔐 Criar conta na nuvem';
+      btn.onclick = ()=>{ closeModal('m-profile'); showAuthScreen(); };
+      const body = document.querySelector('#m-profile .modal-body');
+      body.appendChild(sep);
+      body.appendChild(btn);
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  document.getElementById('f-data').value = new Date().toISOString().slice(0,10);
+  // Default tab on auth screen
+  document.getElementById('auth-submit').dataset.mode = 'in';
+
+  if(sb){
+    // Check existing session
+    const { data: { session } } = await sb.auth.getSession();
+    sb.auth.onAuthStateChange((event, sess)=>{ onSessionChange(sess); });
+    if(session){
+      await onSessionChange(session);
+      return;
+    }
+    // No session yet
+    const hasLocal = (JSON.parse(localStorage.getItem(K_USERS)||'[]')).length > 0;
+    if(hasLocal){
+      // User had been using anonymously — keep them anonymous, but option to sign in available
+      loadAll();
+      updateHeader();
+      goto('dashboard');
+    } else {
+      showAuthScreen();
+    }
+  } else {
+    // Supabase failed to load — fall back to local
+    loadAll();
+    updateHeader();
+    if(!state.current) showOnboarding(); else goto('dashboard');
+  }
 });
 </script>
 <script>
@@ -923,14 +1427,10 @@ const NUTRICAO = {"emagrecer": {"title": "Emagrecer / perder gordura", "info": "
 
 /* Total nutrition options: 420 */
 
-/* ═══════════════════════════════════════════════════════════════
-   RENDER FUNCTIONS — Treinos, Exercícios, Nutrição
-   ═══════════════════════════════════════════════════════════════ */
-
+/* RENDER FUNCTIONS — Treinos, Exercícios, Nutrição */
 const DAYS_PT = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const DAYS_PT_SHORT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 
-/* Which weekdays to train based on frequency */
 function pickTrainingDays(freq) {
   if (freq === 3) return [0,2,4];
   if (freq === 4) return [0,1,3,4];
@@ -940,28 +1440,23 @@ function pickTrainingDays(freq) {
   return [0,2,4];
 }
 
-/* Filter exercises by location + level */
 function exercisesForUser(user, muscleFilter) {
   return Object.entries(EXERCISES).filter(([id, ex]) => {
     if (muscleFilter && ex.muscle !== muscleFilter) return false;
-    // Location filter
     if (user.local !== 'casa-academia') {
       if (!ex.locs.includes(user.local)) return false;
     }
-    // Level filter — iniciante = only beginner exercises; intermediario = beg+inter; avancado = all
     if (user.nivel === 'iniciante' && ex.nivel !== 'iniciante') return false;
     if (user.nivel === 'intermediario' && ex.nivel === 'avancado') return false;
     return true;
   });
 }
 
-/* Build session items from session.blocks definition */
 function buildSessionItems(session, user) {
   const items = [];
   const used = new Set();
   for (const [muscle, sets, reps, rest] of session.blocks) {
     let pool = exercisesForUser(user, muscle).filter(([id]) => !used.has(id));
-    // Fallback: relax level filter if empty
     if (pool.length === 0) {
       pool = Object.entries(EXERCISES).filter(([id, ex]) => {
         if (used.has(id)) return false;
@@ -971,7 +1466,6 @@ function buildSessionItems(session, user) {
       });
     }
     if (pool.length === 0) continue;
-    // Pseudo-random pick based on user.id + day + muscle for stable variation
     const seed = (user.id || '').charCodeAt(0) + (session._dayIdx || 0) * 7 + muscle.length;
     const pick = pool[seed % pool.length];
     if (!pick) continue;
@@ -981,7 +1475,6 @@ function buildSessionItems(session, user) {
   return items;
 }
 
-/* Generate full weekly plan */
 function generatePlan(user) {
   if (!user.objetivo || !user.local || !user.freq || !user.nivel) return null;
   const splits = SPLITS[user.objetivo]?.[user.freq];
@@ -1003,7 +1496,6 @@ function generatePlan(user) {
 
 function tagLabel(t) { return {tg:'Pernas',tb:'Superior',ta:'Ombros',tr:'Cardio',tc:'Core'}[t] || t; }
 
-/* ═══ TREINOS PAGE ═══ */
 let _currentTreinoTab = 'auto';
 let _currentTreinoDay = null;
 
@@ -1011,7 +1503,6 @@ function renderTreinos() {
   const u = getUser();
   if (!u) { showOnboarding(); return; }
   document.getElementById('t-greeting').textContent = `${objLabel(u.objetivo)} · ${locLabel(u.local)} · ${u.freq||4}x/sem · ${nivLabel(u.nivel)}`;
-
   const warn = document.getElementById('treinos-auto-warn');
   if (!u.objetivo || !u.local || !u.freq || !u.nivel) {
     warn.innerHTML = `<div class="warn-bar">Complete seu perfil (objetivo, local, frequência e nível) para gerarmos o plano automaticamente. <button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="goto('perfil')">Ir para o perfil</button></div>`;
@@ -1019,22 +1510,18 @@ function renderTreinos() {
     document.getElementById('treinos-content').innerHTML = '';
     return;
   } else warn.innerHTML = '';
-
   if (_currentTreinoDay === null) {
     const today = new Date().getDay();
     _currentTreinoDay = today === 0 ? 6 : today - 1;
   }
-
   const plan = _currentTreinoTab === 'auto' ? generatePlan(u) : (state.data.meuTreino || generatePlan(u));
   document.getElementById('week-tabs').innerHTML = DAYS_PT_SHORT.map((d, i) => {
     const day = plan?.[i];
     const cls = (i === _currentTreinoDay ? 'active' : '') + (day?.rest ? ' rest' : '');
     return `<button class="day-tab ${cls}" onclick="_currentTreinoDay=${i};renderTreinos()">${d}</button>`;
   }).join('');
-
   const day = plan?.[_currentTreinoDay];
   const c = document.getElementById('treinos-content');
-
   if (_currentTreinoTab === 'meu' && !state.data.meuTreino) {
     c.innerHTML = `
       <div class="info-bar">Você ainda não criou um plano personalizado. Comece a partir do sugerido ou monte do zero.</div>
@@ -1044,9 +1531,7 @@ function renderTreinos() {
       </div>`;
     return;
   }
-
   if (!day) { c.innerHTML = ''; return; }
-
   if (day.rest) {
     c.innerHTML = `
       <div class="workout-card">
@@ -1056,7 +1541,7 @@ function renderTreinos() {
           <div class="wc-tags"><span class="tag tc">Recuperação</span></div>
         </div>
         <div class="wc-body" style="padding:18px 22px">
-          <p style="color:var(--s500);font-size:14px;line-height:1.6">Hoje é dia de descanso. Aproveite para caminhar, alongar, dormir bem e se hidratar. A recuperação é onde os resultados aparecem.</p>
+          <p style="color:var(--s500);font-size:14px;line-height:1.6">Hoje é dia de descanso. Aproveite para caminhar, alongar, dormir bem e se hidratar.</p>
         </div>
       </div>`;
     if (_currentTreinoTab === 'meu') {
@@ -1064,9 +1549,7 @@ function renderTreinos() {
     }
     return;
   }
-
   const editable = _currentTreinoTab === 'meu';
-  // Check if this day is today
   const todayIdx = (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
   const isToday = _currentTreinoDay === todayIdx;
   const done = isToday && treinoFeitoHoje();
@@ -1090,13 +1573,13 @@ function renderTreinos() {
             ${exPhotoHTML(ex,'ex')}
             <div class="ex-info">
               <div class="ex-name">${escapeHtml(ex.name)}</div>
-              <div class="ex-meta">${muscleLabel(ex.muscle)} • desc. ${it.rest}</div>
+              <div class="ex-meta">${muscleLabel(ex.muscle)} · desc. ${it.rest}</div>
             </div>
             <div class="ex-set">${it.sets}×${it.reps}</div>
-            <button class="btn-icon" title="Ver execução" onclick="openExerciseDetail('${it.id}')">
+            <button class="btn-icon" onclick="openExerciseDetail('${it.id}')">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             </button>
-            ${editable ? `<button class="btn-icon" title="Remover" onclick="removeExFromMy(${_currentTreinoDay},${idx})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>` : ''}
+            ${editable ? `<button class="btn-icon" onclick="removeExFromMy(${_currentTreinoDay},${idx})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>` : ''}
           </div>`;
         }).join('')}
       </div>
@@ -1158,42 +1641,37 @@ function renameSession(day) {
   if (newName) { state.data.meuTreino[day].name = newName; saveData(); renderTreinos(); }
 }
 
-/* ═══ Workout Builder Modal ═══ */
 let _builderDay = null;
 let _builderFilter = '';
 let _builderMuscle = '';
 
 function openBuilder(day) {
-  _builderDay = day;
-  _builderFilter = ''; _builderMuscle = '';
-  renderBuilder();
-  openModal('m-builder');
+  _builderDay = day; _builderFilter = ''; _builderMuscle = '';
+  renderBuilder(); openModal('m-builder');
 }
 
 function renderBuilder() {
   const u = getUser();
   const muscles = ['todos','pernas','peito','costas','ombros','bracos','core','cardio'];
-  const filterFn = ([id,ex]) => {
+  const list = Object.entries(EXERCISES).filter(([id,ex]) => {
     if (u.local !== 'casa-academia' && !ex.locs.includes(u.local)) return false;
     if (_builderMuscle && ex.muscle !== _builderMuscle) return false;
     if (_builderFilter && !ex.name.toLowerCase().includes(_builderFilter.toLowerCase())) return false;
     return true;
-  };
-  const list = Object.entries(EXERCISES).filter(filterFn);
+  });
   document.getElementById('builder-body').innerHTML = `
     <div class="field" style="margin-bottom:14px"><label>Buscar exercício</label>
-      <input type="text" id="bld-search" placeholder="Nome do exercício..." value="${escapeHtml(_builderFilter)}" oninput="_builderFilter=this.value;renderBuilder()"></div>
-    <div class="lib-filter" style="margin-bottom:14px">${muscles.map(m => `<button class="chip ${(_builderMuscle||'todos')===m?'active':''}" onclick="_builderMuscle='${m==='todos'?'':m}';renderBuilder()">${muscleLabel(m)==m?m:muscleLabel(m)}</button>`).join('')}</div>
+      <input type="text" placeholder="Nome do exercício..." value="${escapeHtml(_builderFilter)}" oninput="_builderFilter=this.value;renderBuilder()"></div>
+    <div class="lib-filter" style="margin-bottom:14px">${muscles.map(m => `<button class="chip ${(_builderMuscle||'todos')===m?'active':''}" onclick="_builderMuscle='${m==='todos'?'':m}';renderBuilder()">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div>
     <div style="max-height:340px;overflow-y:auto">
     ${list.length ? list.map(([id, ex]) => `
       <div class="exercise-item" style="padding:10px 4px;cursor:pointer" onclick="addExToMy('${id}')">
         ${exPhotoHTML(ex,'ex')}
-        <div class="ex-info"><div class="ex-name">${escapeHtml(ex.name)}</div><div class="ex-meta">${muscleLabel(ex.muscle)} • ${nivLabel(ex.nivel)}</div></div>
+        <div class="ex-info"><div class="ex-name">${escapeHtml(ex.name)}</div><div class="ex-meta">${muscleLabel(ex.muscle)} · ${nivLabel(ex.nivel)}</div></div>
         <div style="color:var(--accent);font-weight:700;font-size:13px">+</div>
       </div>
     `).join('') : '<p style="color:var(--s500);padding:20px;text-align:center">Nenhum exercício encontrado.</p>'}
-    </div>
-  `;
+    </div>`;
   setTimeout(() => startPhotoAnimations(document.getElementById('builder-body')), 200);
 }
 
@@ -1209,14 +1687,13 @@ function addExToMy(id) {
   renderTreinos();
 }
 
-/* ═══ EXERCÍCIOS PAGE ═══ */
 let _libMuscle = 'todos';
 
 function renderExercicios() {
   const u = getUser();
   const muscles = ['todos','pernas','peito','costas','ombros','bracos','core','cardio'];
   document.getElementById('lib-filter').innerHTML = muscles.map(m =>
-    `<button class="chip ${_libMuscle===m?'active':''}" onclick="_libMuscle='${m}';renderExercicios()">${muscleLabel(m)==m?m[0].toUpperCase()+m.slice(1):muscleLabel(m)}</button>`
+    `<button class="chip ${_libMuscle===m?'active':''}" onclick="_libMuscle='${m}';renderExercicios()">${m[0].toUpperCase()+m.slice(1)}</button>`
   ).join('');
   const list = Object.entries(EXERCISES).filter(([id, ex]) => {
     if (u && u.local !== 'casa-academia' && !ex.locs.includes(u.local)) return false;
@@ -1229,7 +1706,7 @@ function renderExercicios() {
       ${exPhotoHTML(ex,'lib')}
       <div class="lib-body">
         <div class="lib-name">${escapeHtml(ex.name)}</div>
-        <div class="lib-muscle">${muscleLabel(ex.muscle)} • ${nivLabel(ex.nivel)}</div>
+        <div class="lib-muscle">${muscleLabel(ex.muscle)} · ${nivLabel(ex.nivel)}</div>
       </div>
     </div>
   `).join('') : '<p style="color:var(--s500);grid-column:1/-1;text-align:center;padding:30px">Nenhum exercício para esse filtro.</p>';
@@ -1247,13 +1724,11 @@ function openExerciseDetail(id) {
       <span class="tag ${ex.nivel==='iniciante'?'tn-i':(ex.nivel==='intermediario'?'tn-m':'tn-a')}">${nivLabel(ex.nivel)}</span>
     </div>
     <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--s500);margin-bottom:8px">Execução</div>
-    <ol class="ex-detail-steps">${ex.steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>
-  `;
+    <ol class="ex-detail-steps">${ex.steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`;
   openModal('m-exercise');
   setTimeout(() => startPhotoAnimations(body), 150);
 }
 
-/* ═══ NUTRIÇÃO PAGE ═══ */
 let _currentNutDay = null;
 
 function renderNutricao() {
@@ -1268,8 +1743,6 @@ function renderNutricao() {
     document.getElementById('nut-water-bar').style.display = 'none';
     return;
   } else warn.innerHTML = '';
-
-  // Water bar at the top
   const peso = u.pesoAtual || state.data.pesos[state.data.pesos.length-1]?.peso;
   const wb = document.getElementById('nut-water-bar');
   if (peso) {
@@ -1277,20 +1750,16 @@ function renderNutricao() {
     wb.style.display = '';
     wb.innerHTML = `💧 Sua meta de água hoje: <strong>${fmtAgua(agua)}</strong> (~${Math.round(agua/0.25)} copos de 250ml para ${peso} kg)`;
   } else wb.style.display = 'none';
-
   const plan = NUTRICAO[u.objetivo];
   if (_currentNutDay === null) {
     const today = new Date().getDay();
     _currentNutDay = today === 0 ? 6 : today - 1;
   }
-
   document.getElementById('nut-week-tabs').innerHTML = DAYS_PT_SHORT.map((d, i) =>
     `<button class="day-tab ${i===_currentNutDay?'active':''}" onclick="_currentNutDay=${i};renderNutricao()">${d}</button>`
   ).join('');
-
   const day = plan.week[_currentNutDay] || plan.week[String(_currentNutDay)];
   if (!day) return;
-
   document.getElementById('nutricao-content').innerHTML = `
     <div class="info-bar"><strong>${escapeHtml(plan.title)}</strong> — ${escapeHtml(plan.info)}</div>
     <div class="section-heading" style="margin-top:8px;margin-bottom:14px"><h2 style="font-size:22px">${DAYS_PT[_currentNutDay]} · ${escapeHtml(day.focus)}</h2></div>
@@ -1314,7 +1783,7 @@ function renderNutricao() {
         </div>
       `).join('')}
     </div>
-    <div class="section-heading" style="margin-top:10px;margin-bottom:14px"><h2 style="font-size:20px">Regras gerais — ${escapeHtml(plan.title)}</h2></div>
+    <div class="section-heading" style="margin-top:10px;margin-bottom:14px"><h2 style="font-size:20px">Regras gerais</h2></div>
     <div class="tip-grid">
       ${plan.rules.map(r => `
         <div class="tip-box">
@@ -1323,9 +1792,70 @@ function renderNutricao() {
         </div>
       `).join('')}
     </div>
-    <div class="warn-bar"><strong>Importante:</strong> isso é um guia geral. Para um plano realmente personalizado, principalmente se você tem alguma condição de saúde, consulte um nutricionista.</div>
-  `;
+    <div class="warn-bar"><strong>Importante:</strong> isso é um guia geral. Para um plano realmente personalizado, consulte um nutricionista.</div>`;
 }
+
+
+/* ═══════════════ CLOUD HOOKS (require render funcs) ═══════════════ */
+const _origSaveUsers = saveUsers;
+saveUsers = function(){ _origSaveUsers(); cloudUpsertProfile().catch(()=>{}); };
+
+const _origAddPeso = addPeso;
+addPeso = function(){
+  const beforeLen = state.data.pesos.length;
+  _origAddPeso();
+  if(state.data.pesos.length > beforeLen){
+    const last = state.data.pesos[state.data.pesos.length-1];
+    cloudInsertPeso(last).then(id=>{ if(id){ last._id = id; saveData(); }}).catch(()=>{});
+  }
+};
+
+const _origDelPeso = delPeso;
+delPeso = function(idx){
+  const reg = state.data.pesos[idx];
+  const ok = confirm('Apagar este registro?');
+  if(!ok) return;
+  if(reg?._id) cloudDeletePeso(reg._id).catch(()=>{});
+  state.data.pesos.splice(idx,1);
+  saveData();
+  renderHistorico();
+};
+
+const _origCloneAutoToMyPlan = cloneAutoToMyPlan;
+cloneAutoToMyPlan = function(){ _origCloneAutoToMyPlan(); cloudSavePlano().catch(()=>{}); };
+
+const _origNewEmptyMyPlan = newEmptyMyPlan;
+newEmptyMyPlan = function(){ _origNewEmptyMyPlan(); cloudSavePlano().catch(()=>{}); };
+
+const _origAddExToMy = addExToMy;
+addExToMy = function(id){ _origAddExToMy(id); cloudSavePlano().catch(()=>{}); };
+
+const _origRemoveExFromMy = removeExFromMy;
+removeExFromMy = function(day, idx){ _origRemoveExFromMy(day, idx); cloudSavePlano().catch(()=>{}); };
+
+const _origConvertRestToTraining = convertRestToTraining;
+convertRestToTraining = function(day){ _origConvertRestToTraining(day); cloudSavePlano().catch(()=>{}); };
+
+const _origRenameSession = renameSession;
+renameSession = function(day){ _origRenameSession(day); cloudSavePlano().catch(()=>{}); };
+
+const _origMarcarTreinoConcluido = marcarTreinoConcluido;
+marcarTreinoConcluido = function(){
+  const wasFeito = treinoFeitoHoje();
+  _origMarcarTreinoConcluido();
+  if(!wasFeito){
+    const last = state.data.treinosConcluidos[state.data.treinosConcluidos.length-1];
+    cloudInsertTreinoConcluido(last).catch(()=>{});
+  }
+};
+
+const _origDesmarcarTreinoConcluido = desmarcarTreinoConcluido;
+desmarcarTreinoConcluido = function(){
+  const today = todayISO();
+  _origDesmarcarTreinoConcluido();
+  cloudDeleteTreinoConcluido(today).catch(()=>{});
+};
+
 
 </script>
 </body>
