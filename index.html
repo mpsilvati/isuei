@@ -314,6 +314,26 @@ tr:hover td{background:var(--cream)}
 .set-row .btn-save:disabled { opacity: .6; cursor: wait; }
 .log-btn svg { color: var(--accent, #ea580c); }
 #toast-lite { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; z-index: 9999; box-shadow: 0 6px 24px rgba(0,0,0,.25); opacity: 0; transition: opacity .2s; pointer-events: none; color: #fff; max-width: 90vw; text-align: center; }
+
+/* Fase 5: Polish */
+@keyframes skeleton-shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+.skeleton { background: linear-gradient(90deg, var(--s100, #ededed) 0%, var(--s50, #f7f7f7) 50%, var(--s100, #ededed) 100%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s infinite; border-radius: 8px; }
+.sk-line { height: 14px; margin-bottom: 8px; }
+.sk-line.short { width: 60%; }
+.sk-card { height: 84px; margin-bottom: 12px; border-radius: 14px; }
+@keyframes fade-in-up { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
+.page { animation: fade-in-up .28s cubic-bezier(.2,.7,.3,1); }
+button:active:not(:disabled), .btn:active:not(:disabled) { transform: scale(0.97); }
+button, .btn { transition: transform .12s, opacity .15s, background .15s; }
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 99999; overflow: hidden; }
+@keyframes confetti-fall { 0% { transform: translate3d(0, -20px, 0) rotate(0); opacity: 1 } 100% { transform: translate3d(var(--x, 0), 105vh, 0) rotate(var(--r, 720deg)); opacity: 0.35 } }
+.confetti-piece { position: absolute; top: -20px; width: 10px; height: 14px; border-radius: 2px; animation: confetti-fall var(--d, 2.6s) cubic-bezier(.15,.7,.3,1) forwards; }
+.empty-state { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; text-align: center; color: var(--s500, #777); }
+.empty-state .emoji { font-size: 56px; margin-bottom: 12px; opacity: .7; }
+.empty-state .title { font-size: 17px; font-weight: 700; color: var(--ink, #111); margin-bottom: 4px; }
+.empty-state .desc { font-size: 13px; max-width: 280px; line-height: 1.5; }
+@keyframes done-pulse { 0% { transform: scale(1) } 50% { transform: scale(1.05) } 100% { transform: scale(1) } }
+.btn-done.done { animation: done-pulse .55s ease-out; }
 </style>
 </head>
 <body>
@@ -1955,6 +1975,36 @@ async function renderExerciseHistory(exId) {
     console.warn('renderExerciseHistory:', e.message);
     el.innerHTML = '<div style="padding:12px;color:var(--s500);font-size:13px">Não foi possível carregar o histórico.</div>';
   }
+}
+
+/* Fase 5: confete + vibracao */
+function fireConfetti() {
+  const colors = ['#ea580c','#fb923c','#fde68a','#ffffff','#fed7aa','#c2410c'];
+  const c = document.createElement('div'); c.className = 'confetti-container'; document.body.appendChild(c);
+  for (let i = 0; i < 70; i++) {
+    const p = document.createElement('div'); p.className = 'confetti-piece';
+    p.style.background = colors[i % colors.length];
+    p.style.left = (Math.random() * 100) + '%';
+    p.style.setProperty('--x', ((Math.random() * 200) - 100) + 'px');
+    p.style.setProperty('--r', (Math.random() * 720 + 360) + 'deg');
+    p.style.setProperty('--d', (2.2 + Math.random() * 1.2) + 's');
+    p.style.animationDelay = (Math.random() * 0.3) + 's';
+    p.style.width = (6 + Math.random()*8) + 'px';
+    p.style.height = (10 + Math.random()*10) + 'px';
+    c.appendChild(p);
+  }
+  setTimeout(() => c.remove(), 4500);
+}
+function vibrateSuccess() { if (navigator.vibrate) { try { navigator.vibrate([60, 40, 60]); } catch(e) {} } }
+if (typeof marcarTreinoConcluido === 'function') {
+  const __origMarcarConfete = marcarTreinoConcluido;
+  marcarTreinoConcluido = function() {
+    const before = (state.data.treinosConcluidos || []).length;
+    const ret = __origMarcarConfete.apply(this, arguments);
+    const after = (state.data.treinosConcluidos || []).length;
+    if (after > before) { fireConfetti(); vibrateSuccess(); }
+    return ret;
+  };
 }
 </script>
 </body>
