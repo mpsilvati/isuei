@@ -1342,13 +1342,14 @@ function buildSessionItems(session, user) {
   const seedBase = ((user.id || 'x').charCodeAt(0) || 1) + (session._dayIdx || 0) * 7;
   const COMPOUND_MUSCLES = new Set(['pernas','peito','costas','ombros','bracos','biceps','triceps','quadriceps','posterior','gluteo','panturrilha','adutor','abdutor','dorsal','trapezio','lombar']);
   const splitSets = (t) => {
-    if (t <= 2) return [t];
+    if (t <= 1) return [1];
+    if (t === 2) return [2];
     if (t === 3) return [2, 2];
-    if (t === 4) return [3, 2];
-    if (t === 5) return [3, 2, 2];
-    if (t === 6) return [3, 3, 2];
-    if (t === 7) return [3, 3, 2, 2];
-    return [3, 3, 3, 2];
+    if (t === 4) return [2, 2, 2];
+    if (t === 5) return [2, 2, 2, 2];
+    if (t === 6) return [2, 2, 2, 2, 2];
+    if (t === 7) return [2, 2, 2, 2, 2, 2];
+    return [2, 2, 2, 2, 2, 2, 2];
   };
   for (let bIdx = 0; bIdx < session.blocks.length; bIdx++) {
     const [muscle, sets, reps, rest] = session.blocks[bIdx];
@@ -1373,11 +1374,11 @@ function buildSessionItems(session, user) {
     }
   }
   const hasWeights = session.blocks.some(b => COMPOUND_MUSCLES.has(b[0]));
-  const minItems = hasWeights ? 5 : 4;
+  const minItems = hasWeights ? 10 : 7;
   if (items.length < minItems) {
     const presentMuscles = session.blocks.map(b => b[0]);
     let mIdx = 0, guard = 0;
-    while (items.length < minItems && guard < 20) {
+    while (items.length < minItems && guard < 40) {
       const m = presentMuscles[mIdx % presentMuscles.length];
       const pool = exercisesForUser(user, m).filter(([id]) => !used.has(id));
       if (pool.length > 0) {
