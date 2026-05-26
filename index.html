@@ -1661,8 +1661,8 @@ function openExerciseDetail(id) {
       <span class="tag ${ex.nivel==='iniciante'?'tn-i':(ex.nivel==='intermediario'?'tn-m':'tn-a')}">${nivLabel(ex.nivel)}</span>
     </div>
     <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--s500);margin-bottom:8px">Execução</div>
-    <ol class="ex-detail-steps">${ex.steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`;
-  openModal('m-exercise');
+    <ol class="ex-detail-steps">${ex.steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol><div id="ex-history" style="margin-top:18px"></div>`;
+  openModal('m-exercise'); renderExerciseHistory(id);
   setTimeout(() => startPhotoAnimations(body), 150);
 }
 
@@ -1877,6 +1877,84 @@ function showToastLite(msg, type) {
   t.style.opacity = '1';
   clearTimeout(t._tm);
   t._tm = setTimeout(()=>{ t.style.opacity = '0'; }, 2800);
+}
+
+/* EXERCISE HISTORY + CHART (Fase 4) */
+let _exChart = null;
+async function renderExerciseHistory(exId) {
+  const el = document.getElementById('ex-history');
+  if (!el) return;
+  el.innerHTML = '<div style="padding:12px;color:var(--s500);font-size:13px">Carregando histórico...</div>';
+  if (!sb || !state.session) {
+    el.innerHTML = '<div style="border-top:1px solid var(--s100);padding:14px 0 0;margin-top:14px;color:var(--s500);font-size:13px;text-align:center">Faça login na nuvem para ver seu histórico desse exercício.</div>';
+    return;
+  }
+  try {
+    const [prRes, histRes, maxRes] = await Promise.all([
+      sb.rpc('get_pr', { p_exercicio: exId }),
+      sb.rpc('get_exercicio_historico', { p_exercicio: exId, p_limit: 30 }),
+      sb.rpc('get_exercicio_max_por_data', { p_exercicio: exId })
+    ]);
+    const pr = prRes.data, hist = histRes.data, maxData = maxRes.data;
+    const hasData = (hist && hist.length) || (maxData && maxData.length);
+    if (!hasData) {
+      el.innerHTML = '<div style="border-top:1px solid var(--s100);padding:14px 0 0;margin-top:14px;color:var(--s500);font-size:13px;text-align:center">Sem registros ainda. Logue suas séries hoje!</div>';
+      return;
+    }
+    let html = '<div style="border-top:1px solid var(--s100);padding-top:16px;margin-top:18px">';
+    html += '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--s500);margin-bottom:10px">Seu histórico</div>';
+    if (pr && pr.length && pr[0].peso != null) {
+      html += '<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#fff7ed,#fed7aa);padding:12px 14px;border-radius:12px;margin-bottom:14px">' +
+        '<span style="font-size:26px">\ud83c\udfc6</span>' +
+        '<div><div style="font-size:11px;color:var(--s500);font-weight:700">RECORDE PESSOAL</div>' +
+        '<div style="font-weight:800;font-size:18px;color:var(--accent)">' + pr[0].peso + ' kg \u00d7 ' + (pr[0].reps || '-') + ' reps</div>' +
+        '<div style="font-size:11px;color:var(--s500)">' + new Date(pr[0].data).toLocaleDateString('pt-BR') + '</div></div></div>';
+    }
+    if (maxData && maxData.length >= 2) {
+      html += '<div style="position:relative;height:200px;margin-bottom:14px"><canvas id="ex-chart"></canvas></div>';
+    }
+    if (hist && hist.length) {
+      const lastDate = hist[0].data;
+      const lastSets = hist.filter(h => h.data === lastDate).sort((a,b) => a.set_idx - b.set_idx);
+      html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--s500);margin-bottom:8px">Último treino \u00b7 ' + new Date(lastDate).toLocaleDateString('pt-BR') + '</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      for (const s of lastSets) {
+        html += '<div style="background:var(--s50);padding:6px 10px;border-radius:8px;font-size:13px">Set ' + (s.set_idx+1) + ': <strong>' + (s.peso != null ? s.peso : '-') + 'kg \u00d7 ' + (s.reps != null ? s.reps : '-') + '</strong></div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    if (maxData && maxData.length >= 2 && window.Chart) {
+      const ctx = document.getElementById('ex-chart');
+      if (ctx) {
+        if (_exChart) { try { _exChart.destroy(); } catch(e){} }
+        _exChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: maxData.map(d => new Date(d.data).toLocaleDateString('pt-BR', {day:'2-digit',month:'short'})),
+            datasets: [{
+              label: 'Peso máximo (kg)',
+              data: maxData.map(d => Number(d.max_peso)),
+              borderColor: '#ea580c', backgroundColor: 'rgba(234,88,12,.12)',
+              tension: 0.3, fill: true, pointRadius: 5, pointBackgroundColor: '#ea580c',
+              pointBorderColor: '#fff', pointBorderWidth: 2
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1f2937', padding: 10 } },
+            scales: {
+              y: { beginAtZero: false, ticks: { color: '#999', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } },
+              x: { ticks: { color: '#999', font: { size: 11 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+    }
+  } catch(e) {
+    console.warn('renderExerciseHistory:', e.message);
+    el.innerHTML = '<div style="padding:12px;color:var(--s500);font-size:13px">Não foi possível carregar o histórico.</div>';
+  }
 }
 </script>
 </body>
