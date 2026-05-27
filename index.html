@@ -334,6 +334,34 @@ button, .btn { transition: transform .12s, opacity .15s, background .15s; }
 .empty-state .desc { font-size: 13px; max-width: 280px; line-height: 1.5; }
 @keyframes done-pulse { 0% { transform: scale(1) } 50% { transform: scale(1.05) } 100% { transform: scale(1) } }
 .btn-done.done { animation: done-pulse .55s ease-out; }
+
+/* fase6-iSuei-v1 */
+.fab-trophy { position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg,#fb923c,#ea580c); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 4px 20px rgba(234,88,12,.45); cursor:pointer; border:none; z-index:100; transition: transform .15s; }
+.fab-trophy:hover { transform: scale(1.06); }
+.fab-trophy.has-new::after { content:''; position:absolute; top:6px; right:6px; width:12px; height:12px; background:#fde047; border:2px solid #fff; border-radius:50%; }
+.badge-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap:12px; padding:8px 0; }
+.badge-card { padding:16px 12px; background: var(--white,#fff); border:1px solid var(--s100,#ededed); border-radius:14px; text-align:center; }
+.badge-card.locked { opacity:.4; filter: grayscale(.8); }
+.badge-card.unlocked { background: linear-gradient(135deg,#fff7ed,#fed7aa); border-color: var(--accent-l,#fed7aa); }
+.badge-emoji { font-size:34px; margin-bottom:8px; }
+.badge-name { font-size:13px; font-weight:700; color: var(--ink,#111); }
+.badge-desc { font-size:11px; color: var(--s500,#777); margin-top:4px; line-height:1.4; }
+.swap-list { max-height:380px; overflow-y:auto; padding:4px 0; }
+.swap-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; transition: background .12s; }
+.swap-item:hover { background: var(--s50,#f7f7f7); }
+.swap-info { flex:1; min-width:0; }
+.swap-name { font-weight:700; font-size:14px; color: var(--ink); }
+.swap-meta { font-size:12px; color: var(--s500); }
+.swap-btn-pick { background: var(--accent,#ea580c); color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; }
+.modal-generic { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:9000; padding:16px; }
+.modal-generic.open { display:flex; animation: fade-in-up .25s ease-out; }
+.modal-generic .modal-box { background: var(--white,#fff); border-radius:16px; max-width:480px; width:100%; max-height:85vh; overflow:hidden; display:flex; flex-direction:column; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.modal-generic .mh { padding:16px 20px; border-bottom:1px solid var(--s100,#ededed); display:flex; align-items:center; justify-content:space-between; }
+.modal-generic .mh h3 { font-size:18px; font-weight:800; color: var(--ink,#111); margin:0; }
+.modal-generic .mh button.close { background:none; border:none; font-size:24px; color: var(--s500,#777); cursor:pointer; line-height:1; padding:0 4px; }
+.modal-generic .mb { padding:16px 20px; overflow-y:auto; }
+.forgot-pwd-link { display:block; text-align:center; margin-top:12px; font-size:13px; color: var(--accent,#ea580c); text-decoration:none; font-weight:600; cursor:pointer; }
+.forgot-pwd-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -2006,6 +2034,156 @@ if (typeof marcarTreinoConcluido === 'function') {
     return ret;
   };
 }
+
+/* === fase6-iSuei-v1 === */
+const BADGES = [
+  { id:'first_workout', emoji:'\ud83c\udf31', name:'Primeiro passo', desc:'Marcou o 1º treino', check: () => (state.data.treinosConcluidos||[]).length >= 1 },
+  { id:'week_complete', emoji:'\u270a', name:'Primeira semana', desc:'3 treinos em 7 dias', check: () => _countLast7Days() >= 3 },
+  { id:'ten_workouts', emoji:'\ud83d\udcaa', name:'10 treinos', desc:'10 sessões', check: () => (state.data.treinosConcluidos||[]).length >= 10 },
+  { id:'fifty_workouts', emoji:'\ud83c\udfcb\ufe0f', name:'50 treinos', desc:'Meio caminho', check: () => (state.data.treinosConcluidos||[]).length >= 50 },
+  { id:'hundred_workouts', emoji:'\ud83c\udfaf', name:'100 treinos', desc:'Lendário', check: () => (state.data.treinosConcluidos||[]).length >= 100 },
+  { id:'streak_7', emoji:'\ud83d\udd25', name:'Streak 7', desc:'Uma semana', check: () => (typeof calcStreak==='function' ? calcStreak() : 0) >= 7 },
+  { id:'streak_14', emoji:'\u26a1', name:'Streak 14', desc:'Duas semanas', check: () => (typeof calcStreak==='function' ? calcStreak() : 0) >= 14 },
+  { id:'streak_30', emoji:'\ud83c\udf0b', name:'Streak 30', desc:'Um mês', check: () => (typeof calcStreak==='function' ? calcStreak() : 0) >= 30 },
+  { id:'first_log', emoji:'\ud83d\udcca', name:'Primeira série', desc:'Logou peso/reps', check: () => state.data._loggedSerie === true },
+  { id:'first_pr', emoji:'\ud83c\udfc6', name:'Primeiro PR', desc:'Bateu recorde', check: () => state.data._firstPR === true },
+  { id:'avatar_set', emoji:'\ud83d\udcf8', name:'Cara nova', desc:'Subiu foto', check: () => !!((typeof getUser==='function' && getUser()) || {}).avatar_url },
+  { id:'weight_4', emoji:'\u2696\ufe0f', name:'4 pesagens', desc:'Acompanhou peso', check: () => (state.data.pesos||[]).length >= 4 }
+];
+function _countLast7Days() { const c = state.data.treinosConcluidos || []; const now = new Date(); return c.filter(t => { const d = new Date(t.date); return (now - d) / 86400000 <= 7; }).length; }
+function getUnlockedBadges() { return state.data.conquistas || []; }
+function checkAchievements() {
+  if (typeof state === 'undefined' || !state.data) return;
+  const u = new Set(getUnlockedBadges());
+  const newly = [];
+  for (const b of BADGES) { if (u.has(b.id)) continue; try { if (b.check()) { u.add(b.id); newly.push(b); } } catch(e){} }
+  if (newly.length) {
+    state.data.conquistas = [...u];
+    if (typeof saveData === 'function') saveData();
+    for (const b of newly) { if (typeof showToastLite === 'function') showToastLite('\ud83c\udfc6 Conquista: ' + b.name, 'ok'); }
+    const fab = document.querySelector('.fab-trophy'); if (fab) fab.classList.add('has-new');
+  }
+}
+function openConquistasModal() {
+  let m = document.getElementById('m-conquistas');
+  if (!m) { m = document.createElement('div'); m.id = 'm-conquistas'; m.className = 'modal-generic'; m.innerHTML = '<div class="modal-box"><div class="mh"><h3>Conquistas</h3><button class="close" onclick="closeConquistas()">&times;</button></div><div class="mb"><div class="badge-grid" id="badge-grid"></div></div></div>'; document.body.appendChild(m); }
+  const u = new Set(getUnlockedBadges());
+  m.querySelector('#badge-grid').innerHTML = BADGES.map(b => { const ok = u.has(b.id); return '<div class="badge-card ' + (ok?'unlocked':'locked') + '"><div class="badge-emoji">' + b.emoji + '</div><div class="badge-name">' + b.name + '</div><div class="badge-desc">' + b.desc + '</div></div>'; }).join('');
+  m.classList.add('open');
+  const fab = document.querySelector('.fab-trophy'); if (fab) fab.classList.remove('has-new');
+}
+function closeConquistas() { const m = document.getElementById('m-conquistas'); if (m) m.classList.remove('open'); }
+function ensureFabTrophy() {
+  if (document.querySelector('.fab-trophy')) return;
+  if (!document.body || typeof state === 'undefined' || !state.data) { setTimeout(ensureFabTrophy, 400); return; }
+  const f = document.createElement('button'); f.className = 'fab-trophy'; f.title = 'Conquistas'; f.textContent = '\ud83c\udfc6'; f.onclick = openConquistasModal; document.body.appendChild(f);
+  checkAchievements();
+}
+if (document.readyState === 'complete') ensureFabTrophy(); else window.addEventListener('load', () => setTimeout(ensureFabTrophy, 600));
+if (typeof marcarTreinoConcluido === 'function') { const __o = marcarTreinoConcluido; marcarTreinoConcluido = function() { const r = __o.apply(this, arguments); setTimeout(checkAchievements, 250); return r; }; }
+if (typeof saveSerie === 'function') { const __o = saveSerie; saveSerie = async function(exId, setIdx, btn) { const r = await __o.apply(this, arguments); if (!state.data._loggedSerie) { state.data._loggedSerie = true; if (typeof saveData==='function') saveData(); } checkAchievements(); setTimeout(() => autoProgressionHint(exId), 700); return r; }; }
+if (typeof checkPR === 'function') { const __o = checkPR; checkPR = async function(exId, peso) { const r = await __o.apply(this, arguments); if (!state.data._firstPR) { state.data._firstPR = true; if (typeof saveData==='function') saveData(); } checkAchievements(); return r; }; }
+
+/* Swap */
+function getAlternativesForExercise(exId) {
+  if (typeof EXERCISES === 'undefined') return [];
+  const ex = EXERCISES[exId]; if (!ex) return [];
+  const u = (typeof getUser === 'function') ? getUser() : null;
+  const sub = ex.sub || ex.muscle;
+  let alts = Object.entries(EXERCISES).filter(([id, e]) => { if (id === exId) return false; if (e.sub !== sub && e.muscle !== sub) return false; if (u && u.local !== 'casa-academia' && !e.locs.includes(u.local)) return false; if (u && u.nivel === 'iniciante' && e.nivel !== 'iniciante') return false; if (u && u.nivel === 'intermediario' && e.nivel === 'avancado') return false; return true; });
+  if (alts.length === 0) alts = Object.entries(EXERCISES).filter(([id, e]) => id !== exId && e.muscle === ex.muscle && (!u || u.local === 'casa-academia' || e.locs.includes(u.local)));
+  return alts.slice(0, 12);
+}
+function openSwap(exId, dayIdx, itemIdx) {
+  let m = document.getElementById('m-swap');
+  if (!m) { m = document.createElement('div'); m.id = 'm-swap'; m.className = 'modal-generic'; m.innerHTML = '<div class="modal-box"><div class="mh"><h3>Trocar exercício</h3><button class="close" onclick="closeSwap()">&times;</button></div><div class="mb"><div class="swap-list" id="swap-list"></div></div></div>'; document.body.appendChild(m); }
+  const alts = getAlternativesForExercise(exId);
+  const list = m.querySelector('#swap-list');
+  if (!alts.length) list.innerHTML = '<p style="padding:20px;text-align:center;color:var(--s500)">Nenhuma alternativa.</p>';
+  else list.innerHTML = alts.map(([id, e]) => { const esc = (typeof escapeHtml === 'function') ? escapeHtml : (s => s); const mL = (typeof muscleLabel === 'function') ? muscleLabel(e.muscle) : e.muscle; const nL = (typeof nivLabel === 'function') ? nivLabel(e.nivel) : e.nivel; return '<div class="swap-item"><div class="swap-info"><div class="swap-name">' + esc(e.name) + '</div><div class="swap-meta">' + mL + ' · ' + nL + '</div></div><button class="swap-btn-pick" onclick="applySwap(\\'' + id + '\\',' + dayIdx + ',' + itemIdx + ',\\'' + exId + '\\')">Trocar</button></div>'; }).join('');
+  m.classList.add('open');
+}
+function closeSwap() { const m = document.getElementById('m-swap'); if (m) m.classList.remove('open'); }
+function applySwap(newId, dayIdx, itemIdx, oldId) {
+  if (typeof _currentTreinoTab !== 'undefined' && _currentTreinoTab === 'meu') { if (state.data.meuTreino && state.data.meuTreino[dayIdx] && state.data.meuTreino[dayIdx].items[itemIdx]) { state.data.meuTreino[dayIdx].items[itemIdx].id = newId; if (typeof saveData === 'function') saveData(); if (typeof cloudSavePlano === 'function') cloudSavePlano().catch(()=>{}); } }
+  else { state.data.subsAuto = state.data.subsAuto || {}; state.data.subsAuto[dayIdx + '-' + oldId] = newId; if (typeof saveData === 'function') saveData(); }
+  closeSwap();
+  if (typeof renderTreinos === 'function') renderTreinos();
+  if (typeof showToastLite === 'function') showToastLite('Exercício trocado', 'ok');
+}
+if (typeof generatePlan === 'function') { const __og = generatePlan; generatePlan = function(user) { const plan = __og.apply(this, arguments); if (!plan || !state.data.subsAuto) return plan; for (let d = 0; d < plan.length; d++) { const day = plan[d]; if (!day || day.rest || !day.items) continue; for (let i = 0; i < day.items.length; i++) { const key = d + '-' + day.items[i].id; if (state.data.subsAuto[key]) day.items[i] = Object.assign({}, day.items[i], { id: state.data.subsAuto[key] }); } } return plan; }; }
+
+/* Auto-progress */
+async function autoProgressionHint(exId) {
+  if (typeof sb === 'undefined' || !sb || !state.session) return;
+  try {
+    const { data } = await sb.rpc('get_exercicio_historico', { p_exercicio: exId, p_limit: 30 });
+    if (!data || data.length < 4) return;
+    const byDate = {}; for (const s of data) (byDate[s.data] = byDate[s.data] || []).push(s);
+    const dates = Object.keys(byDate).sort().reverse().slice(0, 3);
+    if (dates.length < 2) return;
+    const lastTwo = dates.slice(0, 2).map(d => byDate[d]);
+    const lastPeso = lastTwo[0][0] && lastTwo[0][0].peso; if (lastPeso == null) return;
+    let allGood = true; const tgt = 10;
+    for (const sets of lastTwo) { for (const s of sets) { if (s.peso !== lastPeso) { allGood = false; break; } if ((s.reps || 0) < tgt) { allGood = false; break; } } if (!allGood) break; }
+    if (allGood) {
+      const next = Math.round((lastPeso + 2.5) * 2) / 2;
+      const exName = (EXERCISES[exId] && EXERCISES[exId].name) || exId;
+      if (typeof showToastLite === 'function') showToastLite('\ud83d\udca1 ' + exName + ': pronto pra ' + next + ' kg!', 'ok');
+    }
+  } catch(e) {}
+}
+
+/* Forgot password */
+function openResetPwd() {
+  let m = document.getElementById('m-reset-pwd');
+  if (!m) { m = document.createElement('div'); m.id = 'm-reset-pwd'; m.className = 'modal-generic'; m.innerHTML = '<div class="modal-box"><div class="mh"><h3>Recuperar senha</h3><button class="close" onclick="closeResetPwd()">&times;</button></div><div class="mb"><p style="font-size:13px;color:var(--s500);margin-bottom:14px">Enviaremos um link de recuperação pro seu e-mail.</p><div style="margin-bottom:14px"><label style="display:block;font-size:12px;font-weight:700;color:var(--s700);margin-bottom:6px">E-mail</label><input type="email" id="reset-email" placeholder="voce@email.com" style="width:100%;padding:10px 12px;border:1px solid var(--s200,#e5e5e5);border-radius:8px;font-size:14px;box-sizing:border-box"></div><button id="reset-submit" onclick="sendResetPwd()" style="width:100%;padding:11px;background:var(--accent,#ea580c);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">Enviar link</button><p id="reset-msg" style="margin-top:10px;font-size:13px;text-align:center"></p></div></div>'; document.body.appendChild(m); }
+  m.classList.add('open');
+  setTimeout(() => { const e = document.getElementById('reset-email'); if (e) e.focus(); }, 100);
+}
+function closeResetPwd() { const m = document.getElementById('m-reset-pwd'); if (m) m.classList.remove('open'); }
+async function sendResetPwd() {
+  const emailEl = document.getElementById('reset-email');
+  const msgEl = document.getElementById('reset-msg');
+  const btn = document.getElementById('reset-submit');
+  const email = (emailEl.value || '').trim();
+  if (!email || !email.includes('@')) { msgEl.style.color = '#dc2626'; msgEl.textContent = 'Informe um e-mail válido'; return; }
+  if (typeof sb === 'undefined' || !sb) { msgEl.textContent = 'Supabase não carregado'; return; }
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname + '#newpass' }); if (error) throw error; msgEl.style.color = '#16a34a'; msgEl.textContent = '\u2713 Link enviado! Olha sua caixa de entrada.'; setTimeout(closeResetPwd, 3500); } catch(e) { msgEl.style.color = '#dc2626'; msgEl.textContent = 'Erro: ' + (e.message || 'falha'); } finally { btn.disabled = false; btn.textContent = 'Enviar link'; }
+}
+function injectForgotPwdLink() {
+  const ids = ['m-auth','m-login','m-signin'];
+  let modal = null;
+  for (const id of ids) { const e = document.getElementById(id); if (e) { modal = e; break; } }
+  if (!modal) { setTimeout(injectForgotPwdLink, 1500); return; }
+  if (modal.querySelector('.forgot-pwd-link')) return;
+  const body = modal.querySelector('.modal-body') || modal.querySelector('.mb') || modal;
+  const link = document.createElement('a'); link.className = 'forgot-pwd-link'; link.href = '#'; link.textContent = 'Esqueci minha senha'; link.onclick = (e) => { e.preventDefault(); openResetPwd(); }; body.appendChild(link);
+}
+setTimeout(injectForgotPwdLink, 1500);
+if (typeof openModal === 'function') { const __oom = openModal; openModal = function(id) { const r = __oom.apply(this, arguments); if (['m-auth','m-login','m-signin'].includes(id)) setTimeout(injectForgotPwdLink, 250); return r; }; }
+
+/* Swap button injection after each renderTreinos */
+if (typeof renderTreinos === 'function') { const __ort = renderTreinos; renderTreinos = function() { const r = __ort.apply(this, arguments); setTimeout(addSwapButtonsToExerciseItems, 60); return r; }; }
+function addSwapButtonsToExerciseItems() {
+  const items = document.querySelectorAll('.exercise-item');
+  items.forEach((item) => {
+    if (item.querySelector('.swap-btn-injected')) return;
+    const logBtn = item.querySelector('.log-btn'); if (!logBtn) return;
+    const oc = logBtn.getAttribute('onclick') || '';
+    const m = oc.match(/toggleSetLogger\('([^']+)',\s*(\d+),\s*(\d+)\)/);
+    if (!m) return;
+    const exId = m[1], dayIdx = parseInt(m[2], 10), itemIdx = parseInt(m[3], 10);
+    const sb2 = document.createElement('button');
+    sb2.className = 'btn-icon swap-btn-injected'; sb2.title = 'Trocar exercício';
+    sb2.style.cssText = 'color: var(--s500,#777); background:none; border:none; cursor:pointer; padding:6px';
+    sb2.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+    sb2.onclick = (ev) => { ev.stopPropagation(); openSwap(exId, dayIdx, itemIdx); };
+    logBtn.parentNode.insertBefore(sb2, logBtn);
+  });
+}
+console.log('[Fase 6] features carregadas');
 </script>
 </body>
 </html>
