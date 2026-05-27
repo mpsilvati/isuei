@@ -2185,6 +2185,73 @@ function addSwapButtonsToExerciseItems() {
   });
 }
 console.log('[Fase 6] features carregadas');
+
+/* === fase7-iSuei-sync-v1: Sincronização de conquistas/subs/flags na nuvem === */
+async function cloudSaveProfileSync(patch) {
+  if (!sb || !state.session) return;
+  try { await sb.from('profiles').update(patch).eq('id', state.session.user.id); } catch(e) {}
+}
+async function cloudLoadProfileSync() {
+  if (!sb || !state.session) return;
+  try {
+    const { data } = await sb.from('profiles').select('conquistas, subs_auto, logged_serie, first_pr').eq('id', state.session.user.id).maybeSingle();
+    if (!data) return;
+    if (Array.isArray(data.conquistas) && data.conquistas.length) state.data.conquistas = data.conquistas;
+    if (data.subs_auto && typeof data.subs_auto === 'object') state.data.subsAuto = data.subs_auto;
+    if (data.logged_serie) state.data._loggedSerie = true;
+    if (data.first_pr) state.data._firstPR = true;
+    if (typeof saveData === 'function') saveData();
+  } catch(e) {}
+}
+/* Hook checkAchievements pra sincronizar */
+if (typeof checkAchievements === 'function') {
+  const __orig_check = checkAchievements;
+  checkAchievements = function() {
+    const before = JSON.stringify(state.data.conquistas || []);
+    const r = __orig_check.apply(this, arguments);
+    const after = JSON.stringify(state.data.conquistas || []);
+    if (before !== after) cloudSaveProfileSync({ conquistas: state.data.conquistas });
+    return r;
+  };
+}
+/* Hook applySwap pra sincronizar subsAuto */
+if (typeof applySwap === 'function') {
+  const __orig_swap = applySwap;
+  applySwap = function(newId, dayIdx, itemIdx, oldId) {
+    const r = __orig_swap.apply(this, arguments);
+    if (state.data.subsAuto) cloudSaveProfileSync({ subs_auto: state.data.subsAuto });
+    return r;
+  };
+}
+/* Hook saveSerie pra sincronizar logged_serie */
+if (typeof saveSerie === 'function') {
+  const __orig_save = saveSerie;
+  saveSerie = async function(exId, setIdx, btn) {
+    const r = await __orig_save.apply(this, arguments);
+    if (state.data._loggedSerie) cloudSaveProfileSync({ logged_serie: true });
+    return r;
+  };
+}
+/* Hook checkPR pra sincronizar first_pr */
+if (typeof checkPR === 'function') {
+  const __orig_pr = checkPR;
+  checkPR = async function(exId, peso) {
+    const r = await __orig_pr.apply(this, arguments);
+    if (state.data._firstPR) cloudSaveProfileSync({ first_pr: true });
+    return r;
+  };
+}
+/* Hook cloudLoadAll pra carregar campos sincronizados */
+if (typeof cloudLoadAll === 'function') {
+  const __orig_load = cloudLoadAll;
+  cloudLoadAll = async function() {
+    const r = await __orig_load.apply(this, arguments);
+    await cloudLoadProfileSync();
+    setTimeout(() => { if (typeof checkAchievements === 'function') checkAchievements(); }, 600);
+    return r;
+  };
+}
+console.log('[fase7-iSuei-sync-v1] sync hooks loaded');
 </script>
 </body>
 </html>
