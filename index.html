@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -362,6 +363,33 @@ button, .btn { transition: transform .12s, opacity .15s, background .15s; }
 .modal-generic .mb { padding:16px 20px; overflow-y:auto; }
 .forgot-pwd-link { display:block; text-align:center; margin-top:12px; font-size:13px; color: var(--accent,#ea580c); text-decoration:none; font-weight:600; cursor:pointer; }
 .forgot-pwd-link:hover { text-decoration: underline; }
+
+/* fase8-privacy-v1 */
+.danger-zone { margin-top: 24px; padding: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; }
+.danger-zone h4 { color: #991b1b; font-size: 14px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+.danger-zone p { font-size: 13px; color: #7f1d1d; margin-bottom: 12px; line-height: 1.5; }
+.btn-danger { background: #dc2626; color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-ghost-danger { background: transparent; color: #dc2626; border: 1px solid #fca5a5; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; margin-right: 8px; }
+.privacy-content { font-size: 13px; line-height: 1.65; color: #333; }
+.privacy-content h4 { font-size: 15px; font-weight: 800; margin-top: 16px; margin-bottom: 6px; color: #ea580c; }
+.privacy-content p { margin-bottom: 10px; }
+.privacy-content ul { margin-left: 18px; margin-bottom: 10px; }
+.privacy-content li { margin-bottom: 4px; }
+.privacy-link-footer { display: block; text-align: center; margin-top: 20px; font-size: 12px; color: var(--s500, #777); }
+.privacy-link-footer a { color: var(--accent, #ea580c); margin: 0 6px; cursor: pointer; }
+.privacy-link-footer a:hover { text-decoration: underline; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--s100, #ededed); }
+.toggle-row:first-child { border-top: none; }
+.toggle-row .label { flex: 1; }
+.toggle-row .label .title { font-weight: 700; font-size: 14px; color: var(--ink, #111); }
+.toggle-row .label .desc { font-size: 12px; color: var(--s500, #777); margin-top: 2px; }
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 24px; transition: .25s; }
+.toggle-slider::before { position: absolute; content: ''; height: 18px; width: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .25s; }
+input:checked + .toggle-slider { background: var(--accent, #ea580c); }
+input:checked + .toggle-slider::before { transform: translateX(20px); }
 </style>
 </head>
 <body>
@@ -2252,6 +2280,185 @@ if (typeof cloudLoadAll === 'function') {
   };
 }
 console.log('[fase7-iSuei-sync-v1] sync hooks loaded');
+
+/* === fase8-privacy-v1: Privacy / Delete / Export / Ranking opt-out === */
+
+/* Escape utility ensure */
+if (typeof escapeHtml !== 'function') {
+  window.escapeHtml = function(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  };
+}
+
+/* Política de privacidade modal */
+function openPrivacyModal() {
+  let m = document.getElementById('m-privacy');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'm-privacy';
+    m.className = 'modal-generic';
+    m.innerHTML = `<div class="modal-box" style="max-width:640px"><div class="mh"><h3>Política de Privacidade &amp; Termos</h3><button class="close" onclick="closePrivacy()">&times;</button></div><div class="mb privacy-content">
+<h4>O que coletamos</h4>
+<p>Pra criar sua conta: e-mail e senha (ou login Google). Pra montar seus treinos e acompanhar progresso: nome, idade, sexo, altura, peso, medidas corporais (abdômen/cintura/coxa/braço), objetivo de treino e nível.</p>
+<p>Opcionalmente: foto de perfil que você sobe.</p>
+
+<h4>Como usamos</h4>
+<ul>
+<li>Pra montar seus treinos automaticamente</li>
+<li>Pra calcular IMC, meta de água e estatísticas</li>
+<li>Pra mostrar seu ranking entre os outros usuários (você pode optar por ficar invisível)</li>
+<li>Pra detectar PRs (Personal Records)</li>
+</ul>
+
+<h4>Com quem compartilhamos</h4>
+<p>Seu <strong>nome</strong>, <strong>foto</strong>, <strong>objetivo</strong> e <strong>estatísticas de treino</strong> aparecem no ranking pra outros usuários autenticados. Você pode desativar essa exibição em <em>Perfil &rarr; Privacidade</em>.</p>
+<p>Nada mais é compartilhado com terceiros. Não vendemos dados. Não temos propaganda. Não usamos rastreadores de marketing.</p>
+
+<h4>Onde os dados ficam</h4>
+<p>No Supabase (banco de dados PostgreSQL com criptografia em trânsito e em repouso). Cada usuário só vê os próprios dados via Row-Level Security.</p>
+
+<h4>Seus direitos (LGPD)</h4>
+<ul>
+<li><strong>Acesso:</strong> baixar todos os seus dados em JSON (botão "Exportar meus dados" no perfil)</li>
+<li><strong>Correção:</strong> editar qualquer campo do perfil a qualquer momento</li>
+<li><strong>Exclusão:</strong> excluir sua conta completa (botão "Excluir minha conta" no perfil)</li>
+<li><strong>Revogação:</strong> sair do ranking sem deletar a conta</li>
+</ul>
+
+<h4>Contato</h4>
+<p>Dúvidas ou pedidos relacionados aos seus dados: <strong>mpsilvati@gmail.com</strong></p>
+
+<h4>Termos de uso</h4>
+<p>O iSuei é um app de acompanhamento de treinos e dados antropométricos. As programações de treino e o plano nutricional são <strong>guias gerais</strong>, não substituem orientação de profissional (educador físico, nutricionista, médico).</p>
+<p>O serviço é fornecido "como está", sem garantia de disponibilidade ininterrupta. Use por sua conta e risco.</p>
+<p>Você é responsável por manter sua senha em segredo. Se desconfiar de acesso indevido, troque a senha e nos avise.</p>
+
+<p style="margin-top:18px;font-size:11px;color:#999">Última atualização: ${new Date().toLocaleDateString('pt-BR')}</p>
+</div></div>`;
+    document.body.appendChild(m);
+  }
+  m.classList.add('open');
+}
+function closePrivacy() { const m = document.getElementById('m-privacy'); if (m) m.classList.remove('open'); }
+
+/* Adiciona link de privacidade no footer (se não existe) */
+function ensurePrivacyFooterLink() {
+  if (document.querySelector('.privacy-link-footer')) return;
+  const main = document.querySelector('main') || document.body;
+  const f = document.createElement('div');
+  f.className = 'privacy-link-footer';
+  f.innerHTML = '<a onclick="openPrivacyModal()">Privacidade &amp; Termos</a> · <a onclick="openExportModal()">Exportar meus dados</a> · <a onclick="openDangerModal()">Excluir conta</a>';
+  main.appendChild(f);
+}
+setTimeout(ensurePrivacyFooterLink, 1000);
+
+/* Exportar dados */
+async function openExportModal() {
+  if (typeof sb === 'undefined' || !sb || !state.session) { alert('Faça login na nuvem primeiro'); return; }
+  if (typeof showToastLite === 'function') showToastLite('Preparando seu arquivo...', 'ok');
+  try {
+    const { data, error } = await sb.rpc('export_my_data');
+    if (error) throw error;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'isuei-meus-dados-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    if (typeof showToastLite === 'function') showToastLite('\u2713 Arquivo baixado', 'ok');
+  } catch(e) {
+    if (typeof showToastLite === 'function') showToastLite('Erro: ' + (e.message || 'falha'), 'err');
+  }
+}
+
+/* Excluir conta */
+function openDangerModal() {
+  if (typeof sb === 'undefined' || !sb || !state.session) { alert('Faça login na nuvem primeiro'); return; }
+  let m = document.getElementById('m-danger');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'm-danger';
+    m.className = 'modal-generic';
+    m.innerHTML = '<div class="modal-box" style="max-width:480px"><div class="mh"><h3 style="color:#dc2626">Excluir minha conta</h3><button class="close" onclick="closeDanger()">&times;</button></div><div class="mb"><p style="font-size:14px;color:#1f2937;line-height:1.6;margin-bottom:14px">Tem certeza? Isso vai apagar <strong>permanentemente</strong>:</p><ul style="font-size:13px;color:#1f2937;margin-left:20px;margin-bottom:18px;line-height:1.8"><li>Sua conta e e-mail</li><li>Foto de perfil</li><li>Todos os pesos e medidas registrados</li><li>Todos os treinos concluídos e séries logadas</li><li>Conquistas e ranking</li><li>Plano personalizado</li></ul><p style="font-size:13px;color:#7f1d1d;background:#fef2f2;padding:10px 12px;border-radius:8px;border-left:3px solid #dc2626;margin-bottom:18px"><strong>Esta ação é irreversível.</strong> Quer baixar seus dados antes? <a onclick="openExportModal()" style="color:#dc2626;text-decoration:underline;cursor:pointer">Exportar agora</a></p><div style="margin-bottom:14px"><label style="display:block;font-size:12px;font-weight:700;color:var(--s700);margin-bottom:6px">Digite EXCLUIR pra confirmar</label><input type="text" id="danger-confirm" placeholder="EXCLUIR" style="width:100%;padding:10px 12px;border:1px solid #fca5a5;border-radius:8px;font-size:14px;text-transform:uppercase;box-sizing:border-box"></div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn-ghost-danger" onclick="closeDanger()">Cancelar</button><button class="btn-danger" id="danger-submit" onclick="confirmDelete()">Excluir conta</button></div><p id="danger-msg" style="margin-top:10px;font-size:13px;text-align:center;color:#dc2626"></p></div></div>';
+    document.body.appendChild(m);
+  }
+  m.classList.add('open');
+}
+function closeDanger() { const m = document.getElementById('m-danger'); if (m) m.classList.remove('open'); }
+async function confirmDelete() {
+  const inputEl = document.getElementById('danger-confirm');
+  const msgEl = document.getElementById('danger-msg');
+  const btn = document.getElementById('danger-submit');
+  const v = (inputEl.value || '').trim().toUpperCase();
+  if (v !== 'EXCLUIR') { msgEl.textContent = 'Digite EXCLUIR pra confirmar'; return; }
+  btn.disabled = true; btn.textContent = 'Excluindo...';
+  try {
+    const { error } = await sb.rpc('delete_account');
+    if (error) throw error;
+    try { await sb.auth.signOut(); } catch(e) {}
+    try { localStorage.clear(); } catch(e) {}
+    msgEl.style.color = '#16a34a';
+    msgEl.textContent = 'Conta excluída. Até mais.';
+    setTimeout(() => location.href = '/', 2000);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Excluir conta';
+    msgEl.textContent = 'Erro: ' + (e.message || 'falha');
+  }
+}
+
+/* Toggle de privacidade no ranking */
+async function setRankingVisibility(visible) {
+  if (typeof sb === 'undefined' || !sb || !state.session) return;
+  try {
+    await sb.from('profiles').update({ mostrar_no_ranking: visible }).eq('id', state.session.user.id);
+    const u = (typeof getUser === 'function') ? getUser() : null;
+    if (u) u.mostrar_no_ranking = visible;
+    if (typeof saveData === 'function') saveData();
+    if (typeof showToastLite === 'function') showToastLite(visible ? 'Você aparece no ranking' : 'Você está invisível no ranking', 'ok');
+  } catch(e) {
+    if (typeof showToastLite === 'function') showToastLite('Erro ao salvar', 'err');
+  }
+}
+
+/* Injeta toggle de ranking + danger zone no perfil */
+function injectPrivacySettings() {
+  // Tenta encontrar a página/seção de Perfil
+  const profilePage = document.getElementById('page-perfil') || document.querySelector('[id*="perfil"]') || document.querySelector('main');
+  if (!profilePage) { setTimeout(injectPrivacySettings, 1500); return; }
+  if (document.getElementById('privacy-settings-section')) return;
+
+  // Só adiciona se há usuário logado na nuvem
+  if (typeof sb === 'undefined' || !sb || !state.session) { setTimeout(injectPrivacySettings, 1500); return; }
+
+  // Lê estado atual
+  sb.from('profiles').select('mostrar_no_ranking').eq('id', state.session.user.id).maybeSingle().then(({ data }) => {
+    const isVisible = data ? (data.mostrar_no_ranking !== false) : true;
+    const section = document.createElement('div');
+    section.id = 'privacy-settings-section';
+    section.style.cssText = 'margin-top:24px;padding:18px;background:var(--white,#fff);border:1px solid var(--s100,#ededed);border-radius:14px';
+    section.innerHTML = `
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--s500,#777);margin-bottom:12px">Privacidade</div>
+      <div class="toggle-row">
+        <div class="label">
+          <div class="title">Aparecer no ranking</div>
+          <div class="desc">Quando desativado, seu nome e foto não aparecem pros outros usuários</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" id="toggle-ranking" ${isVisible ? 'checked' : ''} onchange="setRankingVisibility(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="danger-zone">
+        <h4>Zona de perigo</h4>
+        <p>Excluir sua conta apaga todos os seus dados de forma permanente.</p>
+        <button class="btn-danger" onclick="openDangerModal()">Excluir minha conta</button>
+        <button class="btn-ghost-danger" style="margin-left:8px;margin-right:0" onclick="openExportModal()">Exportar meus dados</button>
+      </div>`;
+    profilePage.appendChild(section);
+  }).catch(() => setTimeout(injectPrivacySettings, 2000));
+}
+setTimeout(injectPrivacySettings, 1500);
+
+console.log('[fase8-privacy-v1] privacy hardening loaded');
 </script>
 </body>
 </html>
